@@ -2,6 +2,12 @@
 
 A Streamlit-based application that allows users to upload documents (PDFs or images), extract text using OCR, build a context-aware vector store from the extracted information, and then chat with an AI model to get contextually relevant answers. This project implements a Retrieval-Augmented Generation (RAG) pipeline to enhance the AI's responses.
 
+# Deployed Project
+
+https://intellidocai.streamlit.app/
+
+May take sometime to load but will surely work!!
+
 # AI Multimodal Project
 
 A compact, local-first Retrieval-Augmented Generation (RAG) toolkit that extracts text from documents and images, builds a vector index, and provides a chat interface over the extracted content.
