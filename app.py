@@ -50,16 +50,33 @@ def process_pdf(file_contents):
                 st.error(f"Error processing image in PDF: {e}")
     return all_text
 
-st.title("Document AI — Streamlit UI")
+st.set_page_config(layout="wide") # Use wide layout
+
+st.title("📄 Document AI — Streamlit UI")
+
+with st.sidebar:
+    st.header("About")
+    st.markdown(
+        """
+        This application allows you to upload a document (PDF or image), 
+        extract its content using OCR, and then chat with an AI model 
+        that provides context-aware answers based on the document.
+        """
+    )
+    st.markdown("---") # Separator
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 st.header("Upload Document (image or PDF)")
-uploaded = st.file_uploader("Upload a file", type=["png", "jpg", "jpeg", "tiff", "pdf"], accept_multiple_files=False)
+col1, col2 = st.columns(2) # Two columns for upload and text area
+
+with col1:
+    uploaded = st.file_uploader("Upload a file", type=["png", "jpg", "jpeg", "tiff", "pdf"], accept_multiple_files=False)
+
+text = ""
 if uploaded:
     contents = uploaded.getvalue()
-    text = ""
     if uploaded.type == "application/pdf":
         with st.spinner("Processing PDF..."):
             text = process_pdf(contents)
@@ -67,8 +84,9 @@ if uploaded:
         with st.spinner("Performing OCR..."):
             text = ocr_from_image(contents)
     
-    st.subheader("Extracted text")
-    st.text_area("OCR and text extraction result", value=text, height=300)
+    with col2:
+        st.subheader("Extracted text")
+        st.text_area("OCR and text extraction result", value=text, height=300)
 
     with st.spinner("Splitting text into chunks, embedding, and indexing..."):
         chunks = text_splitter.split_text(text)
@@ -80,28 +98,40 @@ if uploaded:
             indexed_count += 1
         st.success(f"Indexed {indexed_count} chunks automatically from {uploaded.name}!")
 
+# Move API key status and model selection to sidebar
+with st.sidebar:
+    st.header("Configuration")
+    # Display API key status
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    if not openrouter_api_key:
+        st.error("OPENROUTER_API_KEY environment variable not set! Please add it to your .env file or environment.")
+    else:
+        st.success("OPENROUTER_API_KEY loaded (masked): " + openrouter_api_key[:4] + "..." + openrouter_api_key[-4:])
+
+    model = st.selectbox(
+        "Model (OpenRouter model name)",
+        [
+            "qwen/qwen3-coder:free", # User requested model
+            "openrouter/auto", # General default, often picks a good free model
+            "mistralai/mistral-7b-instruct",
+            "google/gemma-7b-it",
+            "meta-llama/llama-3-8b-instruct",
+            # Add more free models as needed, check OpenRouter for their latest free tier options
+        ]
+    )
+
 st.header("Chat with document-aware model")
 
-# Display API key status
-openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-if not openrouter_api_key:
-    st.error("OPENROUTER_API_KEY environment variable not set! Please add it to your .env file or environment.")
-else:
-    st.success("OPENROUTER_API_KEY loaded (masked): " + openrouter_api_key[:4] + "..." + openrouter_api_key[-4:])
+# Display chat messages from history on app rerun
+for msg in chat_mgr.histories.get(st.session_state.session_id, []):
+    if msg["role"] == "user":
+        st.chat_message("user").write(msg["text"])
+    elif msg["role"] == "assistant":
+        st.chat_message("assistant").write(msg["text"])
 
-model = st.selectbox(
-    "Model (OpenRouter model name)",
-    [
-        "qwen/qwen3-coder:free", # User requested model
-        "openrouter/auto", # General default, often picks a good free model
-        "mistralai/mistral-7b-instruct",
-        "google/gemma-7b-it",
-        "meta-llama/llama-3-8b-instruct",
-        # Add more free models as needed, check OpenRouter for their latest free tier options
-    ]
-)
-message = st.text_input("Message")
-if st.button("Send") and message:
+message = st.chat_input("Ask a question about the document...")
+if message:
+    st.chat_message("user").write(message)
     with st.spinner("Thinking..."):
         reply = chat_mgr.handle_message(st.session_state.session_id, message, model_name=model)
-    st.write(reply)
+    st.chat_message("assistant").write(reply)
