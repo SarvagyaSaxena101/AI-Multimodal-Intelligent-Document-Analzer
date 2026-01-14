@@ -2,107 +2,120 @@
 
 A Streamlit-based application that allows users to upload documents (PDFs or images), extract text using OCR, build a context-aware vector store from the extracted information, and then chat with an AI model to get contextually relevant answers. This project implements a Retrieval-Augmented Generation (RAG) pipeline to enhance the AI's responses.
 
-## ✨ Features
+# AI Multimodal Project
 
-*   **Document Upload**: Easily upload PDF documents or various image formats (PNG, JPG, JPEG, TIFF).
-*   **Intelligent Text Extraction**:
-    *   **PDF Processing**: Extracts text directly from PDFs and performs OCR on embedded images within PDFs.
-    *   **Image OCR**: Utilizes `EasyOCR` to accurately extract text from uploaded image files.
-*   **Contextual Understanding**:
-    *   **Text Chunking**: Splits extracted document text into manageable chunks.
-    *   **Vector Embeddings**: Converts text chunks into high-dimensional vectors using `Sentence-Transformers`.
-    *   **FAISS Vector Store**: Efficiently indexes and stores document embeddings for rapid similarity search.
-*   **Retrieval-Augmented Generation (RAG)**:
-    *   Retrieves the most relevant document chunks based on user queries.
-    *   Passes these chunks as context to the AI model for highly accurate and context-aware responses.
-*   **Interactive Chat Interface**:
-    *   Clean and intuitive Streamlit UI.
-    *   Real-time chat with AI model (powered by OpenRouter API).
-    *   Dynamic display of chat history.
-*   **Configurable AI Models**: Select from various OpenRouter models directly from the sidebar.
+A compact, local-first Retrieval-Augmented Generation (RAG) toolkit that extracts text from documents and images, builds a vector index, and provides a chat interface over the extracted content.
 
-## 🚀 Getting Started
+Key components live in the `ai_core` package: `chat.py`, `embeddings.py`, `ocr.py`, and `vector_store.py`. The app entrypoint is `app.py` which launches the Streamlit UI.
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+## Highlights
 
-### Prerequisites
+- Upload PDFs and images (PNG/JPG/TIFF) and extract text using OCR.
+- Chunk extracted text, convert to embeddings, and index with FAISS for fast similarity search.
+- Retrieval-augmented chat: the model answers queries using relevant document context.
+- Lightweight, modular codebase so you can swap models, embedding backends, or vector stores.
 
-*   Python 3.9+
-*   `pip` (Python package installer)
+## Quickstart (Local)
 
-### Installation
+Prerequisites:
 
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/your-username/AI-Multimodal-Project.git # Replace with your repo URL
-    cd AI-Multimodal-Project
-    ```
+- Python 3.9+
+- `pip`
 
-2.  **Create and activate a virtual environment**:
-    ```bash
-    python -m venv venv
-    # On Windows:
-    .\venv\Scripts\activate
-    # On macOS/Linux:
-    source venv/bin/activate
-    ```
+Install and run:
 
-3.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+git clone <your-repo-url>
+cd "AI Multimodal Project"
+python -m venv venv
+.\\venv\\Scripts\\activate   # Windows
+pip install -r requirements.txt
+```
 
-4.  **Set up your OpenRouter API Key**:
-    Obtain an `OPENROUTER_API_KEY` from [OpenRouter](https://openrouter.ai/).
-    Create a `.env` file in the root directory of the project and add your API key:
-    ```
-    OPENROUTER_API_KEY="sk-YOUR_OPENROUTER_API_KEY"
-    ```
-    Alternatively, you can set it as an environment variable in your system.
+Create a `.env` with your OpenRouter (or chosen provider) API key:
 
-## 💡 Usage
+```env
+OPENROUTER_API_KEY="sk-YOUR_OPENROUTER_API_KEY"
+```
 
-1.  **Run the Streamlit application**:
-    ```bash
-    streamlit run app.py
-    ```
-    This command will open the application in your web browser.
+Run the app:
 
-2.  **Upload a Document**:
-    *   In the main content area, use the "Upload a file" widget to upload a PDF or an image (PNG, JPG, JPEG, TIFF).
-    *   Observe as the application processes the document, performs OCR (if applicable), and displays the "Extracted text".
-    *   A success message will confirm that the text has been chunked, embedded, and indexed into the vector store.
+```bash
+streamlit run app.py
+```
 
-3.  **Configure AI Model (Sidebar)**:
-    *   Open the sidebar on the left to find the "Configuration" section.
-    *   Ensure your `OPENROUTER_API_KEY` is loaded (its status will be displayed).
-    *   Select your preferred AI model from the dropdown list.
+This opens the Streamlit UI where you can upload documents and start a chat.
 
-4.  **Chat with the Document**:
-    *   Enter your questions related to the uploaded document in the chat input box at the bottom.
-    *   The AI model will use the context from your document to provide relevant answers. The chat history will be displayed above the input.
+## Example: Use `ai_core` programmatically
 
-## 📺 Demo
+Minimal snippet to embed text and query the vector store (adapt to your project):
 
-*(Will add a GIF or screenshot here soon!)*
+```python
+from ai_core.embeddings import EmbeddingClient
+from ai_core.vector_store import VectorStore
 
-## 🌐 Deployed Project
+text_chunks = ["First chunk text...", "Second chunk..."]
+emb = EmbeddingClient()
+vectors = emb.embed_texts(text_chunks)
+vs = VectorStore()
+vs.add_documents(text_chunks, vectors)
 
-*(Link to live deployment will be added here.)*
+# Retrieve
+results = vs.similarity_search("Ask a question about the doc", top_k=4)
+print(results)
+```
 
-## 🛣️ Future Enhancements
+See the `ai_core` modules for function names and parameters.
 
-*   **Improved PDF Parsing**: Integrate more robust PDF parsing libraries or advanced layout analysis tools like LayoutLM/Donut for better understanding of document structure.
-*   **Field Extraction Pipelines**: Develop specific pipelines for extracting structured information (e.g., invoices, forms).
-*   **Confidence Scoring**: Implement mechanisms to provide confidence scores for extracted information and AI-generated answers.
-*   **Active Learning Loops**: Introduce active learning to improve OCR and extraction models over time with user feedback.
-*   **Support for more Document Types**: Extend functionality to include other document formats (e.g., DOCX, XLSX).
-*   **Multi-Document Query**: Allow querying across multiple uploaded documents simultaneously.
+## Project Structure
 
-## 📜 License
+- `app.py` — Streamlit application (entrypoint)
+- `ai_core/` — core modules
+  - `chat.py` — chat orchestration and prompt construction
+  - `embeddings.py` — embedding client wrapper
+  - `ocr.py` — OCR helpers (EasyOCR + PDF helpers)
+  - `vector_store.py` — FAISS index and persistence helpers
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Configuration & Notes
 
-## 🤝 Contact
+- The default embedding model and chat model are configured in the code; swap them in `ai_core/embeddings.py` and `ai_core/chat.py`.
+- Large PDFs: the project chunks text; tune chunk size and overlap in the vectorization pipeline for your use-case.
 
-For any questions or suggestions, please open an issue in this repository.
+## Development
+
+To run linting or tests (if you add them):
+
+```bash
+# example
+pytest
+flake8
+```
+
+If you change dependencies, update `requirements.txt`:
+
+```bash
+pip freeze > requirements.txt
+```
+
+## Roadmap Ideas
+
+- Structured extraction pipelines (invoices, forms)
+- Multi-document cross-search
+- Confidence and provenance tracking for answers
+- Better PDF layout parsing (layout-aware models)
+
+---
+
+If you'd like, I can also:
+
+- add example screenshots/GIFs for the UI,
+- add small unit tests for `ai_core` modules,
+- or prepare a `docker-compose` for local reproducibility.
+
+## License
+
+MIT — see the `LICENSE` file.
+
+## Contact
+
+Open an issue or PR in this repository for questions, improvements, or feature requests.
