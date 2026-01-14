@@ -52,7 +52,7 @@ def process_pdf(file_contents):
 
 st.set_page_config(layout="wide") # Use wide layout
 
-st.title("📄 Document AI — Streamlit UI")
+st.title("📄 AI multimodal context aware generator")
 
 with st.sidebar:
     st.header("About")
