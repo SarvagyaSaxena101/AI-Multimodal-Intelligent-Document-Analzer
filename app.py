@@ -9,13 +9,21 @@ from ai_core.chat import ChatManager
 import fitz  # PyMuPDF
 import io
 from PIL import Image
+from langchain.text_splitter import RecursiveCharacterTextSplitter # Added for chunking
 
 # load root .env
 load_dotenv()
 
+# Retrieve API key after loading .env
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+
 # Initialize AI components
 store = VectorStore()
-chat_mgr = ChatManager(store)
+# Pass embed_texts function to ChatManager for RAG
+chat_mgr = ChatManager(store, openrouter_api_key=openrouter_api_key, embed_texts_func=embed_texts)
+
+# Initialize text splitter for RAG
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
 def process_pdf(file_contents):
     """Extracts text and images from a PDF, performs OCR on images, and returns combined text."""
@@ -62,15 +70,36 @@ if uploaded:
     st.subheader("Extracted text")
     st.text_area("OCR and text extraction result", value=text, height=300)
 
-    if st.button("Index text"):
-        with st.spinner("Embedding and indexing..."):
-            vec = embed_texts([text])[0]
-            doc_id = str(uuid.uuid4())
-            store.add(doc_id, vec, {"text": text, "meta": uploaded.name})
-            st.success(f"Indexed as {doc_id}")
+    with st.spinner("Splitting text into chunks, embedding, and indexing..."):
+        chunks = text_splitter.split_text(text)
+        indexed_count = 0
+        for i, chunk in enumerate(chunks):
+            vec = embed_texts([chunk])[0]
+            # Associate metadata with each chunk if needed, e.g., original document name and chunk index
+            store.add(f"{st.session_state.session_id}_doc_{uploaded.name}_chunk_{i}", vec, {"text": chunk, "meta": uploaded.name, "chunk_id": i})
+            indexed_count += 1
+        st.success(f"Indexed {indexed_count} chunks automatically from {uploaded.name}!")
 
 st.header("Chat with document-aware model")
-model = st.selectbox("Model (OpenRouter model name)", ["openrouter/default"])
+
+# Display API key status
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+if not openrouter_api_key:
+    st.error("OPENROUTER_API_KEY environment variable not set! Please add it to your .env file or environment.")
+else:
+    st.success("OPENROUTER_API_KEY loaded (masked): " + openrouter_api_key[:4] + "..." + openrouter_api_key[-4:])
+
+model = st.selectbox(
+    "Model (OpenRouter model name)",
+    [
+        "qwen/qwen3-coder:free", # User requested model
+        "openrouter/auto", # General default, often picks a good free model
+        "mistralai/mistral-7b-instruct",
+        "google/gemma-7b-it",
+        "meta-llama/llama-3-8b-instruct",
+        # Add more free models as needed, check OpenRouter for their latest free tier options
+    ]
+)
 message = st.text_input("Message")
 if st.button("Send") and message:
     with st.spinner("Thinking..."):

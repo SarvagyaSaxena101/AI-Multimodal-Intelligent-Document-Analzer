@@ -1,7 +1,7 @@
 streamlit==1.26.0
 pytesseract==0.3.10
 Pillow<10
-sentence-transformers==2.2.2
+sentence-transformers
 faiss-cpu==1.7.4
 requests==2.31.0
 python-dotenv==1.0.1
@@ -11,3 +11,4 @@ openai==1.9.0
 pydantic==1.10.9
 PyMuPDF==1.23.26
 langchain-openai
+easyocr
